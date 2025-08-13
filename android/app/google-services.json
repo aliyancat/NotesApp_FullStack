@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "259052883784",
+    "project_id": "tutortyper-b2e13",
+    "storage_bucket": "tutortyper-b2e13.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:259052883784:android:6ec5084e110f37801ead7d",
+        "android_client_info": {
+          "package_name": "com.TutorTyper.tutortyper_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAdY0bDF1p50VAFuQRV3I5-WE257OscwEE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
