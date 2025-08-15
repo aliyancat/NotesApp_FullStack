@@ -5,6 +5,7 @@ import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
+import 'package:tutortyper_app/main.dart';
 import 'package:tutortyper_app/views/register_view.dart';
 
 class LoginView extends StatefulWidget {
@@ -189,7 +190,18 @@ class _LoginViewState extends State<LoginView> {
           desc: 'Welcome back! You are now logged in.',
           btnOkOnPress: () {
             // Navigate to next screen or close dialog
-            Navigator.of(context).pop(); // Example navigation
+            Navigator.pushReplacement(
+              context,
+              PageRouteBuilder(
+                pageBuilder: (context, animation, secondaryAnimation) =>
+                    const NotesView(),
+                transitionsBuilder:
+                    (context, animation, secondaryAnimation, child) {
+                      return FadeTransition(opacity: animation, child: child);
+                    },
+                transitionDuration: const Duration(milliseconds: 300),
+              ),
+            );
           },
           btnOkColor: Colors.green,
         ).show();
