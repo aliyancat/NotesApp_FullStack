@@ -1,12 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-//import 'package:flutter_neumorphic/flutter_neumorphic.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
-import 'package:tutortyper_app/main.dart';
 import 'package:tutortyper_app/views/register_view.dart';
+import 'package:tutortyper_app/main.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -39,7 +38,6 @@ class _LoginViewState extends State<LoginView> {
     return Scaffold(
       body: Stack(
         children: [
-          // Lottie Background
           SizedBox.expand(
             child: Lottie.asset(
               'assets/animations/login_view.json',
@@ -52,7 +50,6 @@ class _LoginViewState extends State<LoginView> {
               },
             ),
           ),
-
           Padding(
             padding: const EdgeInsets.all(20.0),
             child: SafeArea(
@@ -110,7 +107,6 @@ class _LoginViewState extends State<LoginView> {
                       onPressed: _isLoading ? null : _handleLogin,
                       style: NeumorphicStyle(
                         color: const Color.fromARGB(255, 104, 234, 243),
-
                         boxShape: NeumorphicBoxShape.roundRect(
                           BorderRadius.circular(200),
                         ),
@@ -133,7 +129,7 @@ class _LoginViewState extends State<LoginView> {
                   const SizedBox(height: 10),
                   TextButton(
                     onPressed: () {
-                      Navigator.of(context).push(
+                      Navigator.of(context).pushReplacement(
                         MaterialPageRoute(builder: (_) => const RegisterView()),
                       );
                     },
@@ -157,10 +153,11 @@ class _LoginViewState extends State<LoginView> {
   }
 
   Future<void> _handleLogin() async {
+    if (_isLoading) return;
+
     final email = _email.text.trim();
     final password = _password.text.trim();
 
-    // Input validation
     if (email.isEmpty || password.isEmpty) {
       _showSnackBar("Please fill in all fields", Colors.orange);
       return;
@@ -182,29 +179,22 @@ class _LoginViewState extends State<LoginView> {
       );
 
       if (credential.user != null) {
-        AwesomeDialog(
-          context: context,
-          dialogType: DialogType.success,
-          animType: AnimType.scale,
-          title: 'Login Successful!',
-          desc: 'Welcome back! You are now logged in.',
-          btnOkOnPress: () {
-            // Navigate to next screen or close dialog
-            Navigator.pushReplacement(
-              context,
-              PageRouteBuilder(
-                pageBuilder: (context, animation, secondaryAnimation) =>
-                    const NotesView(),
-                transitionsBuilder:
-                    (context, animation, secondaryAnimation, child) {
-                      return FadeTransition(opacity: animation, child: child);
-                    },
-                transitionDuration: const Duration(milliseconds: 300),
-              ),
-            );
-          },
-          btnOkColor: Colors.green,
-        ).show();
+        if (credential.user!.emailVerified) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const NotesView()),
+          );
+        } else {
+          AwesomeDialog(
+            context: context,
+            dialogType: DialogType.warning,
+            animType: AnimType.scale,
+            title: 'Email Not Verified',
+            desc:
+                'Please verify your email address before logging in. Check your inbox for verification email.',
+            btnOkOnPress: () {},
+            btnOkColor: Colors.orange,
+          ).show();
+        }
       }
     } on FirebaseAuthException catch (e) {
       String message;
@@ -217,9 +207,6 @@ class _LoginViewState extends State<LoginView> {
           break;
         case 'invalid-email':
           message = "Invalid email format";
-          break;
-        case 'user-disabled':
-          message = "This account has been disabled";
           break;
         case 'user-disabled':
           message = "This account has been disabled";
@@ -255,7 +242,8 @@ class _LoginViewState extends State<LoginView> {
         content: Text(message),
         backgroundColor: color,
         behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
       ),
-    );
+    ); 
   }
 }
