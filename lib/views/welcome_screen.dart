@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:tutortyper_app/views/login_view.dart';
 import 'package:tutortyper_app/views/register_view.dart';
 
@@ -9,67 +10,80 @@ class WelcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F1E8), // Cream/beige background
       body: Stack(
         children: [
-          // SizedBox Lottie placed at the top
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: SizedBox(
-              height: 300, // adjust how tall you want it
-              width: double.infinity,
-              child: Lottie.asset(
-                'assets/animations/spring_animation.json',
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: const Color(0xFFFFFDD0),
-                    child: const Center(
-                      child: Icon(Icons.eco, color: Colors.green, size: 100),
-                    ),
-                  );
-                },
-              ),
+          // Background Lottie Animation (Full Screen)
+          Positioned.fill(
+            child: Lottie.asset(
+              'assets/animations/spring_animation.json',
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(color: const Color(0xFFF5F1E8));
+              },
             ),
           ),
 
-          // Creamy overlay
-          Container(
-            decoration: BoxDecoration(
-              color: const Color.fromARGB(255, 238, 230, 79).withOpacity(0.3),
-            ),
-          ),
-
-          // Foreground content
+          // Main Content
           SafeArea(
-            child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Spacer(flex: 2),
+                  // Top spacing
+                  const SizedBox(height: 80),
 
-                  // Logo + Title
-                  Column(
-                    children: [
-                      Image.asset(
-                        'assets/images/leaf_icon.png',
-                        height: 60,
-                        width: 60,
-                      ),
-                      const SizedBox(height: 16),
-                      Image.asset(
-                        'assets/images/leafnotes_heading.png',
-                        height: 50,
-                      ),
-                    ],
+                  // Your Logo (Leaf Icon)
+                  Container(
+                    height: 80,
+                    width: 80,
+                    child: Image.asset(
+                      'assets/images/leaf_icon.png',
+                      errorBuilder: (context, error, stackTrace) {
+                        // Fallback if logo doesn't load
+                        return Container(
+                          height: 80,
+                          width: 80,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2D5D3F),
+                            borderRadius: BorderRadius.circular(40),
+                          ),
+                          child: const Icon(
+                            Icons.eco,
+                            color: Colors.white,
+                            size: 40,
+                          ),
+                        );
+                      },
+                    ),
                   ),
 
-                  const Spacer(flex: 3),
+                  // App Name/Heading
+                  const SizedBox(height: 16),
+                  Image.asset(
+                    'assets/images/leafnotes_heading.png',
+                    height: 50,
+                    errorBuilder: (context, error, stackTrace) {
+                      // Fallback text if heading image doesn't load
+                      return Text(
+                        'LeafNotes',
+                        style: GoogleFonts.poppins(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF2D5D3F),
+                          letterSpacing: -0.5,
+                        ),
+                      );
+                    },
+                  ),
 
-                  // Login Button
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 60),
+                  // Spacer to push buttons to bottom
+                  const Spacer(),
+
+                  // Login Button (Custom Image or Modern Button)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
                     child: GestureDetector(
                       onTap: () {
                         Navigator.push(
@@ -79,18 +93,43 @@ class WelcomeScreen extends StatelessWidget {
                           ),
                         );
                       },
-                      child: Image.asset(
-                        'assets/images/login_button.png',
-                        height: 55,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(28),
+                        ),
+                        child: Image.asset(
+                          'assets/images/login_button.png',
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            // Fallback modern button
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF2D5D3F),
+                                borderRadius: BorderRadius.circular(28),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'Login',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
 
-                  // Sign Up Button
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 60),
+                  // Sign Up Button (Custom Image or Modern Button)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
                     child: GestureDetector(
                       onTap: () {
                         Navigator.push(
@@ -100,14 +139,39 @@ class WelcomeScreen extends StatelessWidget {
                           ),
                         );
                       },
-                      child: Image.asset(
-                        'assets/images/signup_button.png',
-                        height: 55,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(28),
+                        ),
+                        child: Image.asset(
+                          'assets/images/signup_button.png',
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            // Fallback modern button
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF2D5D3F),
+                                borderRadius: BorderRadius.circular(28),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'Sign Up',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     ),
                   ),
 
-                  const Spacer(flex: 2),
+                  // Bottom spacing
+                  const SizedBox(height: 60),
                 ],
               ),
             ),

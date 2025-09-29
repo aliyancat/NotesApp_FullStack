@@ -14,6 +14,7 @@ import 'package:tutortyper_app/views/mynotes.dart';
 import 'package:tutortyper_app/views/create_notes.dart';
 import 'package:tutortyper_app/views/setting_screen.dart';
 import 'package:tutortyper_app/models/user_model.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -116,8 +117,6 @@ class AuthWrapper extends StatelessWidget {
         }
 
         if (snapshot.hasData && snapshot.data!.emailVerified) {
-          // User is authenticated and email is verified
-          // Now check if profile is completed
           return const ProfileCheckWrapper();
         }
 
@@ -164,7 +163,6 @@ class ProfileCheckWrapper extends StatelessWidget {
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () {
-                      // Force rebuild to retry
                       (context as Element).reassemble();
                     },
                     child: const Text('Retry'),
@@ -178,11 +176,9 @@ class ProfileCheckWrapper extends StatelessWidget {
         final isProfileCompleted = snapshot.data ?? false;
 
         if (!isProfileCompleted) {
-          // Profile is not completed, show profile completion screen
           return const ProfileCompletionScreen();
         }
 
-        // Profile is completed, show main app
         return const NotesView();
       },
     );
@@ -191,7 +187,6 @@ class ProfileCheckWrapper extends StatelessWidget {
 
 enum MenuAction { logout }
 
-// Updated NotesView with 4-section bottom navigation and theme support
 class NotesView extends StatefulWidget {
   const NotesView({super.key});
 
@@ -206,18 +201,15 @@ class _NotesViewState extends State<NotesView> {
   @override
   void initState() {
     super.initState();
-    // Set user online when entering the app
     _userService.updateOnlineStatus(true);
   }
 
   @override
   void dispose() {
-    // Set user offline when leaving the app
     _userService.updateOnlineStatus(false);
     super.dispose();
   }
 
-  // Define the screens for bottom navigation
   List<Widget> get _screens => [
     const DashboardScreen(),
     const MyNotes(),
@@ -258,9 +250,7 @@ class _NotesViewState extends State<NotesView> {
           ),
         ],
       ),
-      floatingActionButton:
-          _selectedIndex ==
-              1 // Only show FAB on notes tab
+      floatingActionButton: _selectedIndex == 1
           ? FloatingActionButton(
               onPressed: () {
                 Navigator.push(
@@ -293,7 +283,6 @@ class _NotesViewState extends State<NotesView> {
       },
     );
 
-    // Set user offline before logout
     await _userService.updateOnlineStatus(false);
     await Future.delayed(const Duration(seconds: 2));
     await FirebaseAuth.instance.signOut();
@@ -307,246 +296,246 @@ class _NotesViewState extends State<NotesView> {
   }
 }
 
-// Updated Dashboard Screen with theme support - FIXED VERSION
-class DashboardScreen extends StatelessWidget {
+// FIXED DASHBOARD SCREEN
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
 
+class _DashboardScreenState extends State<DashboardScreen> {
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Dashboard'),
-        backgroundColor: const Color.fromARGB(255, 104, 234, 243),
-        foregroundColor: Colors.white,
-        automaticallyImplyLeading: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              // Refresh dashboard data
-            },
-            tooltip: 'Refresh',
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Welcome Card
-                Card(
-                  elevation: 4,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
+      backgroundColor: const Color(0xFFF1EDE6),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Top section with user avatar and greeting
+            Container(
+              width: double.infinity,
+              color: const Color(0xFFF1EDE6),
+              padding: const EdgeInsets.fromLTRB(32, 80, 32, 40),
+              child: Row(
+                children: [
+                  // User Avatar
+                  Container(
+                    width: 80,
+                    height: 80,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(15),
-                      gradient: const LinearGradient(
-                        colors: [
-                          Color.fromARGB(255, 104, 234, 243),
-                          Color.fromARGB(255, 80, 200, 210),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                      color: Colors.grey[300],
+                      shape: BoxShape.circle,
+                    ),
+                    child: ClipOval(
+                      child: SvgPicture.asset(
+                        'assets/images/user_avatar.svg',
+                        fit: BoxFit.cover,
                       ),
                     ),
+                  ),
+                  const SizedBox(width: 20),
+                  // Greeting Text
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Welcome back!',
+                      children: const [
+                        Text(
+                          'Hi Demo 👋',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: Colors.black,
                             fontSize: 24,
-                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Nunito',
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 4),
                         Text(
-                          user?.email ?? 'User',
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 16,
+                          'Stay productive today!',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 18,
+                            fontFamily: 'Nunito',
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
-
-                const SizedBox(height: 20),
-
-                // Quick Actions
-                Text(
-                  'Quick Actions',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Action Cards Row
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildActionCard(
-                        context,
-                        'Create Note',
-                        Icons.note_add,
-                        Colors.green,
-                        () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const CreateNotes(),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildActionCard(
-                        context,
-                        'View Friends',
-                        Icons.people,
-                        Colors.blue,
-                        () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const FriendsListScreen(),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 20),
-
-                // Recent Activity Section
-                Text(
-                  'Recent Activity',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Activity List - Fixed height instead of Expanded
-                Container(
-                  height: 280, // Fixed height for scrollable content
-                  child: Card(
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          _buildActivityItem(
-                            Icons.note,
-                            'Notes created',
-                            'View all your notes',
-                            Colors.orange,
-                          ),
-                          const Divider(),
-                          _buildActivityItem(
-                            Icons.people,
-                            'Friends connected',
-                            'Manage your connections',
-                            Colors.purple,
-                          ),
-                          const Divider(),
-                          _buildActivityItem(
-                            Icons.chat,
-                            'Messages sent',
-                            'Continue conversations',
-                            Colors.teal,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Add minimal bottom spacing - consider bottom nav bar
-                SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
-              ],
+                ],
+              ),
             ),
-          ),
+
+            // Main content container with rounded top
+            Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                color: Color(0xFFE6F6F9),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 21),
+              child: Column(
+                children: [
+                  // Top Row Cards: Create Notes & Streaks
+                  Row(
+                    children: [
+                      // Create Notes Card
+                      Expanded(
+                        child: _buildFeatureCard(
+                          color: const Color(0xFFB6F8ED),
+                          title: 'Create Notes',
+                          titleColor: const Color(0xFF0C3C2B),
+                          imagePath: 'assets/images/create_notes.png',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const CreateNotes(),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 23),
+                      // Streaks Card
+                      Expanded(
+                        child: _buildFeatureCard(
+                          color: const Color(0xFFFEE2C9),
+                          title: 'Streaks',
+                          titleColor: const Color(0xFF7D1717),
+                          imagePath: 'assets/images/streaks_icon.png',
+                          onTap: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Streaks feature coming soon!'),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Bottom Row Cards: Bloom Counter & To-Do List
+                  Row(
+                    children: [
+                      // Bloom Counter Card
+                      Expanded(
+                        child: _buildFeatureCard(
+                          color: const Color(0xFFFDFFA9),
+                          title: 'Bloom Counter',
+                          titleColor: const Color(0xFF66612B),
+                          imagePath: 'assets/images/bloom_counter_icon.png',
+                          onTap: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Bloom Counter feature coming soon!',
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 23),
+                      // To-Do List Card
+                      Expanded(
+                        child: _buildFeatureCard(
+                          color: const Color(0xFFFFDAEB),
+                          title: 'To - Do List',
+                          titleColor: const Color(0xFF72266C),
+                          imagePath: 'assets/images/todo_list_icon.png',
+                          onTap: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'To-Do List feature coming soon!',
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // Add extra padding at bottom to ensure content is scrollable
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildActionCard(
-    BuildContext context,
-    String title,
-    IconData icon,
-    Color color,
-    VoidCallback onTap,
-  ) {
+  Widget _buildFeatureCard({
+    required Color color,
+    required String title,
+    required Color titleColor,
+    required String imagePath,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
-      child: Card(
-        elevation: 3,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: color.withOpacity(0.1),
-          ),
-          child: Column(
-            children: [
-              Icon(icon, size: 40, color: color),
-              const SizedBox(height: 12),
-              Text(
+      child: Container(
+        height: 207,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x19000000),
+              blurRadius: 25,
+              offset: Offset(0, 4),
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            const SizedBox(height: 18),
+            // Title
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
                 title,
                 style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                  fontSize: 14,
+                  color: titleColor,
+                  fontSize: 18,
+                  fontFamily: 'Roboto',
+                  fontWeight: FontWeight.w700,
                 ),
-                textAlign: TextAlign.center,
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 12),
+            // Image/Icon placeholder
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Image.asset(
+                  imagePath,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(
+                      Icons.image,
+                      size: 80,
+                      color: titleColor.withOpacity(0.3),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
         ),
       ),
-    );
-  }
-
-  Widget _buildActivityItem(
-    IconData icon,
-    String title,
-    String subtitle,
-    Color color,
-  ) {
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: color.withOpacity(0.2),
-        child: Icon(icon, color: color, size: 20),
-      ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-      subtitle: Text(subtitle),
-      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
     );
   }
 }
