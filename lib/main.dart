@@ -15,6 +15,7 @@ import 'package:tutortyper_app/views/create_notes.dart';
 import 'package:tutortyper_app/views/setting_screen.dart';
 import 'package:tutortyper_app/models/user_model.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'dart:math' as math;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -225,30 +226,50 @@ class _NotesViewState extends State<NotesView> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      body: _screens[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color.fromARGB(255, 104, 234, 243),
-        unselectedItemColor: theme.brightness == Brightness.dark
-            ? Colors.grey[400]
-            : Colors.grey,
-        backgroundColor: theme.brightness == Brightness.dark
-            ? theme.bottomNavigationBarTheme.backgroundColor
-            : null,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.note), label: 'Notes'),
-          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Friends'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-        ],
+      body: IndexedStack(index: _selectedIndex, children: _screens),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: (index) => setState(() => _selectedIndex = index),
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: const Color(0xFF00D9FF),
+          unselectedItemColor: theme.brightness == Brightness.dark
+              ? Colors.grey[400]
+              : Colors.grey,
+          backgroundColor: theme.brightness == Brightness.dark
+              ? theme.bottomNavigationBarTheme.backgroundColor
+              : Colors.white,
+          elevation: 0,
+          selectedFontSize: 12,
+          unselectedFontSize: 11,
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.dashboard_rounded),
+              label: 'Dashboard',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.note_alt_rounded),
+              label: 'Notes',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.people_rounded),
+              label: 'Friends',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.settings_rounded),
+              label: 'Settings',
+            ),
+          ],
+        ),
       ),
       floatingActionButton: _selectedIndex == 1
           ? FloatingActionButton(
@@ -258,8 +279,9 @@ class _NotesViewState extends State<NotesView> {
                   MaterialPageRoute(builder: (context) => const CreateNotes()),
                 );
               },
-              backgroundColor: const Color.fromARGB(255, 104, 234, 243),
-              child: const Icon(Icons.add, color: Colors.white),
+              backgroundColor: const Color(0xFF00D9FF),
+              elevation: 8,
+              child: const Icon(Icons.add, color: Colors.white, size: 28),
             )
           : null,
     );
@@ -296,7 +318,7 @@ class _NotesViewState extends State<NotesView> {
   }
 }
 
-// FIXED DASHBOARD SCREEN
+// OPTIMIZED DASHBOARD SCREEN
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -304,238 +326,502 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _fadeAnimation;
+  final ScrollController _scrollController = ScrollController();
+  double _scrollOffset = 0;
+  static const _headerHeight = 200.0;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+
+    _fadeAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOut,
+    );
+
+    _scrollController.addListener(_onScroll);
+    _controller.forward();
+  }
+
+  void _onScroll() {
+    final offset = _scrollController.offset;
+    if ((offset - _scrollOffset).abs() > 5) {
+      setState(() => _scrollOffset = offset);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final headerOpacity = (1 - (_scrollOffset / 100)).clamp(0.0, 1.0);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF1EDE6),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Top section with user avatar and greeting
-            Container(
-              width: double.infinity,
-              color: const Color(0xFFF1EDE6),
-              padding: const EdgeInsets.fromLTRB(32, 80, 32, 40),
-              child: Row(
-                children: [
-                  // User Avatar
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      shape: BoxShape.circle,
-                    ),
-                    child: ClipOval(
-                      child: SvgPicture.asset(
-                        'assets/images/user_avatar.svg',
-                        fit: BoxFit.cover,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFF8F9FA), Color(0xFFE8F4F8)],
+          ),
+        ),
+        child: CustomScrollView(
+          controller: _scrollController,
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            // Optimized Header
+            SliverAppBar(
+              expandedHeight: _headerHeight,
+              floating: false,
+              pinned: true,
+              elevation: 0,
+              backgroundColor: Colors.transparent,
+              flexibleSpace: FlexibleSpaceBar(
+                background: _DashboardHeader(
+                  fadeAnimation: _fadeAnimation,
+                  headerOpacity: headerOpacity,
+                ),
+              ),
+            ),
+
+            // Stats Cards
+            SliverToBoxAdapter(
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _StatCard(
+                          icon: Icons.note_alt_rounded,
+                          title: 'Notes',
+                          value: '24',
+                          color: const Color(0xFF00D9FF),
+                        ),
                       ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _StatCard(
+                          icon: Icons.local_fire_department_rounded,
+                          title: 'Streak',
+                          value: '7 days',
+                          color: const Color(0xFFFF6B6B),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Quick Actions Header
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(24, 0, 24, 20),
+                child: Text(
+                  'Quick Actions',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2D3748),
+                  ),
+                ),
+              ),
+            ),
+
+            // Feature Cards Grid
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 0.85,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                ),
+                delegate: SliverChildListDelegate([
+                  _FeatureCard(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF11998E), Color(0xFF38EF7D)],
+                    ),
+                    title: 'Create Notes',
+                    icon: Icons.edit_note_rounded,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const CreateNotes()),
                     ),
                   ),
-                  const SizedBox(width: 20),
-                  // Greeting Text
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          'Hi Demo 👋',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 24,
-                            fontFamily: 'Nunito',
-                            fontWeight: FontWeight.w400,
+                  _FeatureCard(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFFFFB75E), Color(0xFFED8F03)],
+                    ),
+                    title: 'Streaks',
+                    icon: Icons.local_fire_department_rounded,
+                    onTap: () => _showComingSoon(context, 'Streaks'),
+                  ),
+                  _FeatureCard(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFFF093FB), Color(0xFFF5576C)],
+                    ),
+                    title: 'Bloom Counter',
+                    icon: Icons.spa_rounded,
+                    onTap: () => _showComingSoon(context, 'Bloom Counter'),
+                  ),
+                  _FeatureCard(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF4FACFE), Color(0xFF00F2FE)],
+                    ),
+                    title: 'To-Do List',
+                    icon: Icons.checklist_rounded,
+                    onTap: () => _showComingSoon(context, 'To-Do List'),
+                  ),
+                ]),
+              ),
+            ),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showComingSoon(BuildContext context, String feature) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$feature feature coming soon!'),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+}
+
+// Extracted header widget
+class _DashboardHeader extends StatelessWidget {
+  final Animation<double> fadeAnimation;
+  final double headerOpacity;
+
+  const _DashboardHeader({
+    required this.fadeAnimation,
+    required this.headerOpacity,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: fadeAnimation,
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Row(
+                  children: [
+                    Hero(
+                      tag: 'user_avatar',
+                      child: Container(
+                        width: 70,
+                        height: 70,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 3),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 15,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: ClipOval(
+                          child: Lottie.asset(
+                            'assets/animations/avatar_animation.json',
+                            fit: BoxFit.cover,
                           ),
                         ),
-                        SizedBox(height: 4),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Opacity(
+                            opacity: headerOpacity,
+                            child: const Text(
+                              'Welcome back,',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Hi Demo 👋',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.notifications_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Opacity(
+                  opacity: headerOpacity,
+                  child: const Text(
+                    'Stay productive today!',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Optimized StatCard widget
+class _StatCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String value;
+  final Color color;
+
+  const _StatCard({
+    required this.icon,
+    required this.title,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2D3748),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Optimized FeatureCard widget
+class _FeatureCard extends StatelessWidget {
+  final LinearGradient gradient;
+  final String title;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _FeatureCard({
+    required this.gradient,
+    required this.title,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: gradient,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: gradient.colors.first.withOpacity(0.4),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Stack(
+            children: [
+              Positioned.fill(child: CustomPaint(painter: _PatternPainter())),
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(icon, color: Colors.white, size: 28),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          'Stay productive today!',
-                          style: TextStyle(
-                            color: Colors.black,
+                          title,
+                          style: const TextStyle(
+                            color: Colors.white,
                             fontSize: 18,
-                            fontFamily: 'Nunito',
-                            fontWeight: FontWeight.w400,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Tap to open',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              SizedBox(width: 4),
+                              Icon(
+                                Icons.arrow_forward_rounded,
+                                color: Colors.white,
+                                size: 14,
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Main content container with rounded top
-            Container(
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                color: Color(0xFFE6F6F9),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
+                  ],
                 ),
               ),
-              padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 21),
-              child: Column(
-                children: [
-                  // Top Row Cards: Create Notes & Streaks
-                  Row(
-                    children: [
-                      // Create Notes Card
-                      Expanded(
-                        child: _buildFeatureCard(
-                          color: const Color(0xFFB6F8ED),
-                          title: 'Create Notes',
-                          titleColor: const Color(0xFF0C3C2B),
-                          imagePath: 'assets/images/create_notes.png',
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const CreateNotes(),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 23),
-                      // Streaks Card
-                      Expanded(
-                        child: _buildFeatureCard(
-                          color: const Color(0xFFFEE2C9),
-                          title: 'Streaks',
-                          titleColor: const Color(0xFF7D1717),
-                          imagePath: 'assets/images/streaks_icon.png',
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Streaks feature coming soon!'),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Bottom Row Cards: Bloom Counter & To-Do List
-                  Row(
-                    children: [
-                      // Bloom Counter Card
-                      Expanded(
-                        child: _buildFeatureCard(
-                          color: const Color(0xFFFDFFA9),
-                          title: 'Bloom Counter',
-                          titleColor: const Color(0xFF66612B),
-                          imagePath: 'assets/images/bloom_counter_icon.png',
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Bloom Counter feature coming soon!',
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 23),
-                      // To-Do List Card
-                      Expanded(
-                        child: _buildFeatureCard(
-                          color: const Color(0xFFFFDAEB),
-                          title: 'To - Do List',
-                          titleColor: const Color(0xFF72266C),
-                          imagePath: 'assets/images/todo_list_icon.png',
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'To-Do List feature coming soon!',
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  // Add extra padding at bottom to ensure content is scrollable
-                  const SizedBox(height: 40),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildFeatureCard({
-    required Color color,
-    required String title,
-    required Color titleColor,
-    required String imagePath,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 207,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x19000000),
-              blurRadius: 25,
-              offset: Offset(0, 4),
-              spreadRadius: 1,
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            const SizedBox(height: 18),
-            // Title
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                title,
-                style: TextStyle(
-                  color: titleColor,
-                  fontSize: 18,
-                  fontFamily: 'Roboto',
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            // Image/Icon placeholder
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Image.asset(
-                  imagePath,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Icon(
-                      Icons.image,
-                      size: 80,
-                      color: titleColor.withOpacity(0.3),
-                    );
-                  },
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+// Optimized pattern painter with caching
+class _PatternPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withOpacity(0.1)
+      ..style = PaintingStyle.fill;
+
+    // Reduced number of circles for better performance
+    canvas.drawCircle(Offset(size.width * 0.8, 20), 30, paint);
+    canvas.drawCircle(Offset(size.width * 0.85, 80), 30, paint);
+    canvas.drawCircle(Offset(-20, size.height * 0.7), 50, paint);
   }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

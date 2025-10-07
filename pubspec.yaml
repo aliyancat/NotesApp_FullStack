@@ -47,9 +47,6 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/animations/login_background.json
-    - assets/animations/login_view.json
-    - assets/animations/Loading.json
-    - assets/animations/spring_animation.json
-    - assets/animations/sahiwala.json
-    - assets/images/user_avatar.svg
+    - assets/images/
+    - assets/icons/
+    - assets/animations/
