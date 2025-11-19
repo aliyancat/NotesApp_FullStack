@@ -591,7 +591,7 @@ class _RegisterViewState extends State<RegisterView> {
       print('DEBUG: ❌ Unexpected error during registration: $e');
       _showDialog(
         DialogType.error,
-        'Registration Failed',
+        'Registration has failed dear sir',
         'An error occurred during registration: ${e.toString()}',
       );
     } finally {
