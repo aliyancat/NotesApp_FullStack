@@ -34,7 +34,7 @@ class WelcomeScreen extends StatelessWidget {
                   const SizedBox(height: 80),
 
                   // Your Logo (Leaf Icon)
-                  Container(
+                  SizedBox(
                     height: 80,
                     width: 80,
                     child: Image.asset(

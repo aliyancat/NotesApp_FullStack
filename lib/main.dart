@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:tutortyper_app/views/login_view.dart';
-import 'package:tutortyper_app/views/register_view.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
 import 'package:tutortyper_app/views/welcome_screen.dart';
 import 'package:tutortyper_app/views/profile_completion_screen.dart';
@@ -13,9 +12,6 @@ import 'package:tutortyper_app/views/friends_list_screen.dart';
 import 'package:tutortyper_app/views/mynotes.dart';
 import 'package:tutortyper_app/views/create_notes.dart';
 import 'package:tutortyper_app/views/setting_screen.dart';
-import 'package:tutortyper_app/models/user_model.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'dart:math' as math;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -143,9 +139,9 @@ class ProfileCheckWrapper extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Loading your profile...'),
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  const Text('Loading your profile...'),
                 ],
               ),
             ),
@@ -164,7 +160,11 @@ class ProfileCheckWrapper extends StatelessWidget {
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () {
-                      (context as Element).reassemble();
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(
+                          builder: (_) => const ProfileCheckWrapper(),
+                        ),
+                      );
                     },
                     child: const Text('Retry'),
                   ),
@@ -186,8 +186,6 @@ class ProfileCheckWrapper extends StatelessWidget {
   }
 }
 
-enum MenuAction { logout }
-
 class NotesView extends StatefulWidget {
   const NotesView({super.key});
 
@@ -200,90 +198,132 @@ class _NotesViewState extends State<NotesView> {
   int _selectedIndex = 0;
 
   @override
-  void initState() {
-    super.initState();
-    _userService.updateOnlineStatus(true);
-  }
-
-  @override
   void dispose() {
     _userService.updateOnlineStatus(false);
     super.dispose();
   }
 
-  List<Widget> get _screens => [
-    const DashboardScreen(),
-    const MyNotes(),
-    const FriendsListScreen(),
-    SettingsScreen(
-      onLogout: _handleLogout,
-      onThemeChanged: NotesViewWrapper.of(context)?.onThemeChanged,
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _userService.updateOnlineStatus(true);
+  }
+
+  List<Widget> _buildScreens(BuildContext context) {
+    return [
+      const DashboardScreen(),
+      const MyNotes(),
+      const FriendsListScreen(),
+      SettingsScreen(
+        onLogout: _handleLogout,
+        onThemeChanged: NotesViewWrapper.of(context)?.onThemeChanged,
+      ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final screens = _buildScreens(context);
 
-    return Scaffold(
-      body: IndexedStack(index: _selectedIndex, children: _screens),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, dynamic result) async {
+        if (didPop) return;
+
+        // Check if there are routes to pop
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        } else {
+          // If at root, show exit confirmation instead of logging out
+          final shouldExit = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Exit App?'),
+              content: const Text('Do you want to exit the application?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text('Exit'),
+                ),
+              ],
             ),
-          ],
+          );
+
+          if (shouldExit == true && mounted) {
+            // Only update online status, don't sign out
+            await _userService.updateOnlineStatus(false);
+            // Exit the app (this will minimize it, not logout)
+            // Don't call signOut() - user should only logout via logout button
+          }
+        }
+      },
+      child: Scaffold(
+        body: IndexedStack(index: _selectedIndex, children: screens),
+        bottomNavigationBar: Container(
+          decoration: BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: const Offset(0, -5),
+              ),
+            ],
+          ),
+          child: BottomNavigationBar(
+            currentIndex: _selectedIndex,
+            onTap: (index) => setState(() => _selectedIndex = index),
+            type: BottomNavigationBarType.fixed,
+            selectedItemColor: const Color(0xFF00D9FF),
+            unselectedItemColor: theme.brightness == Brightness.dark
+                ? Colors.grey[400]
+                : Colors.grey,
+            backgroundColor: theme.brightness == Brightness.dark
+                ? theme.bottomNavigationBarTheme.backgroundColor
+                : Colors.white,
+            elevation: 0,
+            selectedFontSize: 12,
+            unselectedFontSize: 11,
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.dashboard_rounded),
+                label: 'Dashboard',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.note_alt_rounded),
+                label: 'Notes',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.people_rounded),
+                label: 'Friends',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.settings_rounded),
+                label: 'Settings',
+              ),
+            ],
+          ),
         ),
-        child: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: (index) => setState(() => _selectedIndex = index),
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: const Color(0xFF00D9FF),
-          unselectedItemColor: theme.brightness == Brightness.dark
-              ? Colors.grey[400]
-              : Colors.grey,
-          backgroundColor: theme.brightness == Brightness.dark
-              ? theme.bottomNavigationBarTheme.backgroundColor
-              : Colors.white,
-          elevation: 0,
-          selectedFontSize: 12,
-          unselectedFontSize: 11,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard_rounded),
-              label: 'Dashboard',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.note_alt_rounded),
-              label: 'Notes',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.people_rounded),
-              label: 'Friends',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.settings_rounded),
-              label: 'Settings',
-            ),
-          ],
-        ),
+        floatingActionButton: _selectedIndex == 1
+            ? FloatingActionButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const CreateNotes(),
+                    ),
+                  );
+                },
+                backgroundColor: const Color(0xFF00D9FF),
+                elevation: 8,
+                child: const Icon(Icons.add, color: Colors.white, size: 28),
+              )
+            : null,
       ),
-      floatingActionButton: _selectedIndex == 1
-          ? FloatingActionButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CreateNotes()),
-                );
-              },
-              backgroundColor: const Color(0xFF00D9FF),
-              elevation: 8,
-              child: const Icon(Icons.add, color: Colors.white, size: 28),
-            )
-          : null,
     );
   }
 
@@ -408,10 +448,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                   child: Row(
                     children: [
                       Expanded(
-                        child: _StatCard(
+                        child: _NotesStatCard(
                           icon: Icons.note_alt_rounded,
                           title: 'Notes',
-                          value: '24',
                           color: const Color(0xFF00D9FF),
                         ),
                       ),
@@ -635,6 +674,88 @@ class _DashboardHeader extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// Dynamic Notes StatCard widget that fetches real-time count
+class _NotesStatCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final Color color;
+
+  const _NotesStatCard({
+    required this.icon,
+    required this.title,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+
+    if (userId == null) {
+      return _buildCard(context, '0');
+    }
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('notes')
+          .snapshots(),
+      builder: (context, snapshot) {
+        final count = snapshot.hasData ? snapshot.data!.docs.length : 0;
+        return _buildCard(context, count.toString());
+      },
+    );
+  }
+
+  Widget _buildCard(BuildContext context, String value) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2D3748),
+            ),
+          ),
+        ],
       ),
     );
   }

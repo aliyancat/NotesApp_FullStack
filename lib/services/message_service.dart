@@ -60,15 +60,30 @@ class MessageService {
 
         final chatRef = _firestore.collection('chats').doc(chatId);
 
+        // Check if chat document exists
+        final chatDoc = await transaction.get(chatRef);
+        
         // Add the message
         transaction.set(messageRef, message.toMap());
 
-        // Update chat with last message info
-        transaction.update(chatRef, {
-          'lastMessage': text.trim(),
-          'lastMessageTime': FieldValue.serverTimestamp(),
-          'lastMessageSender': currentUserId,
-        });
+        // Update or create chat with last message info
+        if (chatDoc.exists) {
+          // Update existing chat document
+          transaction.update(chatRef, {
+            'lastMessage': text.trim(),
+            'lastMessageTime': FieldValue.serverTimestamp(),
+            'lastMessageSender': currentUserId,
+          });
+        } else {
+          // Create chat document if it doesn't exist
+          transaction.set(chatRef, {
+            'id': chatId,
+            'lastMessage': text.trim(),
+            'lastMessageTime': FieldValue.serverTimestamp(),
+            'lastMessageSender': currentUserId,
+            'createdAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+        }
       });
 
       print('DEBUG: Message sent successfully');

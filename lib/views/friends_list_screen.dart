@@ -338,17 +338,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
             : null,
       ),
       child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => EnhancedChatScreen(
-                otherUser: friend,
-                chatId: 'chat_${friend.id}',
-              ),
-            ),
-          );
-        },
+        onTap: () => _startChat(friend),
         borderRadius: BorderRadius.circular(20),
         child: Padding(
           padding: const EdgeInsets.all(20),

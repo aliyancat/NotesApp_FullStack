@@ -402,10 +402,6 @@ class UserService {
       );
 
       await _firestore.collection('users').doc(userId).set(userModel.toMap());
-
-      print(
-        'User profile created successfully with username: @$normalizedUsername',
-      );
     } catch (e) {
       print('Error creating user profile: $e');
       rethrow;
@@ -534,26 +530,16 @@ class UserService {
     try {
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser == null) {
-        print('DEBUG: No current user found');
         return false;
       }
-
-      print(
-        'DEBUG: Sending friend request from ${currentUser.uid} to username: $username',
-      );
 
       final normalizedUsername = username.toLowerCase().trim();
 
       // Find the user by username
       final receiverUser = await findUserByUsername(normalizedUsername);
       if (receiverUser == null) {
-        print('DEBUG: User not found with username: $normalizedUsername');
         return false;
       }
-
-      print(
-        'DEBUG: Found receiver user: ${receiverUser.id} (${receiverUser.username})',
-      );
 
       // Check if user is trying to add themselves
       if (receiverUser.id == currentUser.uid) {
@@ -567,7 +553,6 @@ class UserService {
           .get();
 
       if (!currentUserDoc.exists) {
-        print('DEBUG: Current user document does not exist');
         return false;
       }
 
@@ -623,15 +608,11 @@ class UserService {
         createdAt: DateTime.now(),
       );
 
-      print('DEBUG: Creating friend request with ID: $requestId');
-      print('DEBUG: Request data: ${friendRequest.toMap()}');
-
       await _firestore
           .collection('friendRequests')
           .doc(requestId)
           .set(friendRequest.toMap());
 
-      print('DEBUG: Friend request created successfully');
       return true;
     } catch (e) {
       print('Error sending friend request: $e');
@@ -643,8 +624,6 @@ class UserService {
   Stream<List<Map<String, dynamic>>> getIncomingFriendRequestsStream() {
     if (currentUserId == null) return Stream.value([]);
 
-    print('DEBUG: Getting incoming requests for user: $currentUserId');
-
     return _firestore
         .collection('friendRequests')
         .where('receiverId', isEqualTo: currentUserId)
@@ -652,20 +631,14 @@ class UserService {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .asyncMap((snapshot) async {
-          print('DEBUG: Found ${snapshot.docs.length} incoming requests');
-
           List<Map<String, dynamic>> requestsWithUserData = [];
 
           for (var doc in snapshot.docs) {
             try {
-              print('DEBUG: Processing request doc: ${doc.id}');
-              print('DEBUG: Request data: ${doc.data()}');
-
               final request = FriendRequestModel.fromMap(
                 doc.data(),
                 docId: doc.id,
               );
-              print('DEBUG: Created request model: ${request.toString()}');
 
               // Get sender's user data
               final senderDoc = await _firestore
@@ -678,27 +651,17 @@ class UserService {
                 senderData['id'] = senderDoc.id;
 
                 final senderUser = UserModel.fromMap(senderData);
-                print(
-                  'DEBUG: Found sender: ${senderUser.displayName} (@${senderUser.username})',
-                );
 
                 requestsWithUserData.add({
                   'id': request.id,
                   'fromUser': senderUser.toMap(),
                 });
-              } else {
-                print(
-                  'DEBUG: Sender document not found for ID: ${request.senderId}',
-                );
               }
             } catch (e) {
-              print('ERROR: Error processing incoming request ${doc.id}: $e');
+              // Silently skip invalid requests
             }
           }
 
-          print(
-            'DEBUG: Returning ${requestsWithUserData.length} processed incoming requests',
-          );
           return requestsWithUserData;
         });
   }
@@ -707,8 +670,6 @@ class UserService {
   Stream<List<Map<String, dynamic>>> getOutgoingFriendRequestsStream() {
     if (currentUserId == null) return Stream.value([]);
 
-    print('DEBUG: Getting outgoing requests for user: $currentUserId');
-
     return _firestore
         .collection('friendRequests')
         .where('senderId', isEqualTo: currentUserId)
@@ -716,20 +677,14 @@ class UserService {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .asyncMap((snapshot) async {
-          print('DEBUG: Found ${snapshot.docs.length} outgoing requests');
-
           List<Map<String, dynamic>> requestsWithUserData = [];
 
           for (var doc in snapshot.docs) {
             try {
-              print('DEBUG: Processing outgoing request doc: ${doc.id}');
-              print('DEBUG: Request data: ${doc.data()}');
-
               final request = FriendRequestModel.fromMap(
                 doc.data(),
                 docId: doc.id,
               );
-              print('DEBUG: Created request model: ${request.toString()}');
 
               // Get receiver's user data
               final receiverDoc = await _firestore
@@ -742,27 +697,17 @@ class UserService {
                 receiverData['id'] = receiverDoc.id;
 
                 final receiverUser = UserModel.fromMap(receiverData);
-                print(
-                  'DEBUG: Found receiver: ${receiverUser.displayName} (@${receiverUser.username})',
-                );
 
                 requestsWithUserData.add({
                   'id': request.id,
                   'toUser': receiverUser.toMap(),
                 });
-              } else {
-                print(
-                  'DEBUG: Receiver document not found for ID: ${request.receiverId}',
-                );
               }
             } catch (e) {
-              print('ERROR: Error processing outgoing request ${doc.id}: $e');
+              // Silently skip invalid requests
             }
           }
 
-          print(
-            'DEBUG: Returning ${requestsWithUserData.length} processed outgoing requests',
-          );
           return requestsWithUserData;
         });
   }
@@ -1561,9 +1506,4 @@ class UserService {
     return age;
   }
 
-  /// Dispose method for cleanup (if needed)
-  void dispose() {
-    // Add any cleanup logic here if needed
-    print('UserService disposed');
-  }
 }

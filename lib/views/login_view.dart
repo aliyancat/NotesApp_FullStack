@@ -1,12 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
-import 'package:flutter_neumorphic_plus/flutter_neumorphic.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'package:tutortyper_app/views/register_view.dart';
-import 'package:tutortyper_app/main.dart';
 import 'package:tutortyper_app/services/user_service.dart';
+import 'package:tutortyper_app/main.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -21,8 +19,12 @@ class _LoginViewState extends State<LoginView> with TickerProviderStateMixin {
   late Animation<Offset> _slideAnimation;
   bool _isLoading = false;
 
-  // Helper for responsive sizing
-  Size get size => MediaQuery.of(context).size;
+  // Cache size to avoid repeated MediaQuery calls
+  Size? _cachedSize;
+  Size get size {
+    _cachedSize ??= MediaQuery.of(context).size;
+    return _cachedSize!;
+  }
 
   @override
   void initState() {
@@ -133,9 +135,7 @@ class _LoginViewState extends State<LoginView> with TickerProviderStateMixin {
               enabled: !_isLoading,
               enableSuggestions: false,
               autocorrect: false,
-              textCapitalization: isPassword
-                  ? TextCapitalization.none
-                  : TextCapitalization.none,
+              textCapitalization: TextCapitalization.none,
             ),
           ),
         ),
@@ -324,9 +324,6 @@ class _LoginViewState extends State<LoginView> with TickerProviderStateMixin {
     setState(() => _isLoading = true);
 
     try {
-      print('DEBUG: Starting username-based login process...');
-      print('DEBUG: Username: $username');
-
       // Step 1: Find user by username to get their email
       final userService = UserService();
       final userByUsername = await userService.findUserByUsername(username);
@@ -337,7 +334,6 @@ class _LoginViewState extends State<LoginView> with TickerProviderStateMixin {
       }
 
       final email = userByUsername.email;
-      print('DEBUG: Found user with email: $email');
 
       // Step 2: Sign in with Firebase Auth using the email
       final userCredential = await FirebaseAuth.instance
@@ -347,39 +343,24 @@ class _LoginViewState extends State<LoginView> with TickerProviderStateMixin {
         throw Exception('Login failed - no user returned');
       }
 
-      print('DEBUG: ✅ Firebase Auth login successful');
-      print('DEBUG: User ID: ${userCredential.user!.uid}');
-      print('DEBUG: User Email: ${userCredential.user!.email}');
-      print('DEBUG: Email Verified: ${userCredential.user!.emailVerified}');
-
       // Step 3: Verify user document exists in Firestore
       final existingUser = await userService.getCurrentUser();
 
       if (existingUser == null) {
-        print(
-          'DEBUG: ⚠️ User document missing in Firestore - this should not happen during login',
-        );
         throw Exception('User profile not found in database');
-      } else {
-        print(
-          'DEBUG: ✅ User document exists in Firestore: ${existingUser.email}, Username: @${existingUser.username}',
-        );
       }
 
       // Step 4: Update online status
       await userService.updateOnlineStatus(true);
-      print('DEBUG: ✅ Online status updated');
 
       // Step 5: Check email verification and navigate
       if (userCredential.user!.emailVerified) {
-        print('DEBUG: ✅ Email verified - navigating to home');
         if (mounted) {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => const NotesView()),
           );
         }
       } else {
-        print('DEBUG: ⚠️ Email not verified - showing verification dialog');
         AwesomeDialog(
           context: context,
           dialogType: DialogType.warning,
@@ -388,16 +369,12 @@ class _LoginViewState extends State<LoginView> with TickerProviderStateMixin {
           desc:
               'Please verify your email address before logging in. Check your inbox for verification email.',
           btnOkOnPress: () {
-            // Optionally sign out the user since they can't proceed
             FirebaseAuth.instance.signOut();
           },
           btnOkColor: Colors.orange,
         ).show();
       }
-
-      print('DEBUG: ✅ Login process completed');
     } on FirebaseAuthException catch (e) {
-      print('DEBUG: ❌ Firebase Auth error: ${e.code} - ${e.message}');
 
       String message;
       switch (e.code) {
@@ -424,7 +401,6 @@ class _LoginViewState extends State<LoginView> with TickerProviderStateMixin {
       }
       _showSnackBar(message, Colors.red);
     } catch (e) {
-      print('DEBUG: ❌ Unexpected error during login: $e');
       String errorMessage = e.toString();
       if (errorMessage.contains('Exception:')) {
         errorMessage = errorMessage.replaceFirst('Exception:', '').trim();
